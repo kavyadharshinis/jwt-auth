@@ -23,28 +23,31 @@ public class MyUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String input) throws UsernameNotFoundException {
-        // Check user table
+        // First check in users (clients) by username or email
         Optional<User> userOpt = userRepo.findByEmail(input)
                 .or(() -> userRepo.findByUsername(input));
 
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             return new org.springframework.security.core.userdetails.User(
-                    user.getUsername(), user.getPassword(),
+                    user.getUsername(),
+                    user.getPassword(),
                     Collections.singleton(new SimpleGrantedAuthority(user.getRole()))
             );
         }
 
-        // Check employee table
+        // If not found, check in employees
         Optional<Employee> empOpt = employeeRepo.findByUsername(input);
         if (empOpt.isPresent()) {
             Employee emp = empOpt.get();
             return new org.springframework.security.core.userdetails.User(
-                    emp.getUsername(), emp.getPassword(),
+                    emp.getUsername(),
+                    emp.getPassword(),
                     Collections.singleton(new SimpleGrantedAuthority(emp.getRole()))
             );
         }
 
-        throw new UsernameNotFoundException("User/Employee not found: " + input);
+        // If no match found, throw error
+        throw new UsernameNotFoundException("User or Employee not found with input: " + input);
     }
 }

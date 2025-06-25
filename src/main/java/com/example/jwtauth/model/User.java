@@ -3,6 +3,7 @@ package com.example.jwtauth.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "users")
@@ -21,10 +22,27 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @NotBlank(message = "Password is required")
-    @Column(nullable = false)
+    // Allow null for OAuth2 users
+    @Column
     private String password;
 
+    // Allow null for OAuth2 users
+    @Column(name = "phone_number")
+    private String phoneNumber;
+
+    @Column
+    private LocalDate dob; // Changed to LocalDate to match database
+
+    @Column
+    private String gender;
+
+    @Column(name = "first_name")
+    private String firstName;
+
+    @Column(name = "last_name")
+    private String lastName;
+
+    @Column
     private String role = "ROLE_USER";
 
     // Constructors
@@ -55,6 +73,21 @@ public class User {
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+
+    public LocalDate getDob() { return dob; }
+    public void setDob(LocalDate dob) { this.dob = dob; }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+
+    public String getFirstName() { return firstName; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
+
+    public String getLastName() { return lastName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }

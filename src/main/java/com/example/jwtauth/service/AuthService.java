@@ -2,6 +2,7 @@ package com.example.jwtauth.service;
 
 import com.example.jwtauth.model.User;
 import com.example.jwtauth.repository.UserRepository;
+import com.example.jwtauth.repository.EmployeeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,6 +20,9 @@ public class AuthService {
 
     @Autowired
     private UserRepository userRepo;
+
+    @Autowired
+    private EmployeeRepository employeeRepo;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
