@@ -1,25 +1,22 @@
 package com.example.jwtauth.config;
 
-import com.example.jwtauth.config.JwtAuthFilter;
 import com.example.jwtauth.service.MyUserDetailsService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.*;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.*;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
-import org.springframework.security.config.annotation.web.builders.*;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.*;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.bcrypt.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.*;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
+import org.springframework.web.cors.*;
 
 import java.util.List;
 
@@ -29,21 +26,28 @@ import java.util.List;
 public class SecurityConfig {
 
     @Autowired
-    private JwtAuthFilter jwtAuthFilter;
-
-    @Autowired
     private MyUserDetailsService userDetailsService;
 
     @Autowired
     private OAuth2SuccessHandler oAuth2SuccessHandler;
 
+    @Autowired
+    private JwtAuthFilter jwtAuthFilter;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        return http
-                .cors(Customizer.withDefaults())
-                .csrf(AbstractHttpConfigurer::disable)
+        http
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"error\": \"Unauthorized\"}");
+                        })
+                )
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints (login, OAuth, chat, etc.)
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
                                 "/auth/**",
                                 "/employee/login",
@@ -53,34 +57,28 @@ public class SecurityConfig {
                                 "/api/chat/**",
                                 "/error"
                         ).permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/contact/send").permitAll()
-
-                        // Employee access
+                        .requestMatchers(HttpMethod.POST, "/api/contact/send").permitAll()
                         .requestMatchers("/admin/**", "/bank/**").hasAuthority("ROLE_EMPLOYEE")
-
-                        // Client access
                         .requestMatchers("/client/**").hasAuthority("ROLE_USER")
-
-                        // Everything else requires authentication
                         .anyRequest().authenticated()
                 )
-                .oauth2Login(oauth2 -> oauth2
-                        .successHandler(oAuth2SuccessHandler) // ✅ Social login handler
-                )
-
-
+                .oauth2Login(oauth2 -> oauth2.successHandler(oAuth2SuccessHandler))
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .build();
+                // ✅ Run JWT filter BEFORE anonymous filter to avoid losing auth
+                .addFilterBefore(jwtAuthFilter, AnonymousAuthenticationFilter.class);
+
+        return http.build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("http://localhost:5173"));
+        config.setAllowedOriginPatterns(List.of("http://localhost:5173", "http://localhost:5175"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
@@ -96,19 +94,4 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
 }
-
-
-//                .authorizeHttpRequests(auth -> auth
-//                        .requestMatchers("/auth/**", "/employee/login").permitAll()
-//                        .requestMatchers("/admin/**").hasAuthority("ROLE_EMPLOYEE")
-//                        .requestMatchers("/bank/deposit/**").hasAuthority("ROLE_EMPLOYEE")
-//                        .requestMatchers("/client/**").permitAll()
-//                        // ✅ Allow public access to both login routes
-//                        .anyRequest().authenticated()  // ✅ Everything else requires JWT
-//                )

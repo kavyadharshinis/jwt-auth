@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom"; // ✅ Updated
+import { useNavigate, useLocation } from "react-router-dom";
 import { FcGoogle } from "react-icons/fc";
 import { FaFacebookF } from "react-icons/fa";
 import axios from "./utils/axios";
@@ -7,7 +7,7 @@ import bgImage from "./assets/register.jpg";
 
 const Login = () => {
     const navigate = useNavigate();
-    const location = useLocation(); // ✅
+    const location = useLocation();
 
     const [formData, setFormData] = useState({
         username: "",
@@ -24,6 +24,11 @@ const Login = () => {
         }
     }, [location.search]);
 
+    useEffect(() => {
+        axios.get("/auth/test")
+            .then(res => console.log("✅ Backend says:", res.data))
+            .catch(err => console.error("❌ Test failed:", err));
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -35,8 +40,14 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log("Logging in with:", JSON.stringify(formData));
         try {
-            const res = await axios.post("/auth/login", formData);
+            const res = await axios.post("/auth/login", formData, { // Remove JSON.stringify, use object directly
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                withCredentials: true // Ensure cookies/credentials are sent if needed
+            });
 
             const { token, username, role } = res.data;
             localStorage.setItem("token", token);
@@ -44,13 +55,18 @@ const Login = () => {
             localStorage.setItem("role", role);
 
             if (role === "ROLE_EMPLOYEE") {
-                navigate("/employee-dashboard");
+                navigate("/bank");
             } else {
                 navigate("/dashboard");
             }
         } catch (err) {
-            console.error("Login error:", err);
-            setError("Invalid username or password");
+            console.error("Login error details:", {
+                message: err.message,
+                status: err.response?.status,
+                data: err.response?.data
+            });
+            const backendError = err.response?.data?.error || "Something went wrong. Try again.";
+            setError(backendError);
         }
     };
 
@@ -64,7 +80,6 @@ const Login = () => {
 
     return (
         <div className="flex min-h-screen font-sans">
-            {/* Left Image */}
             <div className="w-1/2 relative flex items-center justify-center bg-[#fef6e4] p-10">
                 <img
                     src={bgImage}
@@ -73,7 +88,6 @@ const Login = () => {
                 />
             </div>
 
-            {/* Right Login Form */}
             <div className="w-1/2 flex flex-col justify-center items-center bg-white p-10 z-10">
                 <h2 className="text-2xl font-bold text-center mb-2">Login</h2>
                 <p className="text-gray-600 italic mb-6 text-center">

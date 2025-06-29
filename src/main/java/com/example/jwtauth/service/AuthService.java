@@ -15,8 +15,8 @@ public class AuthService {
     @Autowired
     private AuthenticationManager authManager;
 
-    @Autowired
-    private MyUserDetailsService userDetailsService;
+//    @Autowired
+//    private MyUserDetailsService userDetailsService;
 
     @Autowired
     private UserRepository userRepo;
@@ -28,16 +28,20 @@ public class AuthService {
     private PasswordEncoder passwordEncoder;
 
     public void register(User user) {
+        if (userRepo.findByUsername(user.getUsername()).isPresent()) {
+            throw new RuntimeException("User already exists");
+        }
         System.out.println("Registering: " + user.getUsername());
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepo.save(user);
     }
 
+
     public void authenticate(String username, String password) {
         authManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
     }
 
-    public UserDetails loadUserByUsername(String username) {
-        return userDetailsService.loadUserByUsername(username);
-    }
+//    public UserDetails loadUserByUsername(String username) {
+//        return userDetailsService.loadUserByUsername(username);
+//    }
 }

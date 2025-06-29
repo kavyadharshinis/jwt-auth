@@ -5,6 +5,7 @@ import com.example.jwtauth.model.User;
 import com.example.jwtauth.repository.EmployeeRepository;
 import com.example.jwtauth.repository.UserRepository;
 import com.example.jwtauth.service.AuthService;
+import com.example.jwtauth.service.MyUserDetailsService;
 import com.example.jwtauth.util.JwtUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,10 @@ public class AuthController {
 
     @Autowired
     private UserRepository userRepo;
+
+    @Autowired
+    private MyUserDetailsService userDetailsService;
+
 
 
     @PostMapping("/register")
@@ -80,6 +85,7 @@ public class AuthController {
 public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequest loginRequest) {
     String input = loginRequest.getUsername();
     String password = loginRequest.getPassword();
+    System.out.println("💥 Received login from frontend: " + loginRequest.getUsername());
 
     try {
         authManager.authenticate(
@@ -90,7 +96,7 @@ public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequest login
                 .body(Map.of("error", "Invalid username or password"));
     }
 
-    UserDetails userDetails = authService.loadUserByUsername(input);
+    UserDetails userDetails = userDetailsService.loadUserByUsername(input);
     String token = jwtUtil.generateToken(userDetails.getUsername());
     String role = userDetails.getAuthorities().stream().findFirst().get().getAuthority();
 
@@ -100,6 +106,12 @@ public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequest login
             "role", role
     ));
 }
+    @GetMapping("/test")
+    public ResponseEntity<String> testApi() {
+        return ResponseEntity.ok("Test successful!");
+    }
+
+
 
 
 }
