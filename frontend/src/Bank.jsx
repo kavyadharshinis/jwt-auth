@@ -26,7 +26,7 @@ const Bank = () => {
             <main className="p-8 flex flex-col md:flex-row gap-6 justify-center mt-12">
                 {/* View Requests Card */}
                 <div className="w-64 h-80 bg-blue-900 rounded-lg shadow-md flex items-center justify-center">
-                    <Link to="/view-requests">
+                    <Link to="/viewrequests">
                         <button className="border border-gray-300 text-white px-4 py-2 rounded-md hover:bg-blue-600 font-medium">
                             View All Requests
                         </button>
